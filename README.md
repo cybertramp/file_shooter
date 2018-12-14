@@ -11,10 +11,8 @@
 - Use
 	- File Transfer
 		``` command$./master -s <FILE_NAME>
-
-		``` command$./client -r
+			command$./client -r
 
 	- File Collect
 		``` command$./master -r
-
-		``` command$./client -s <FILE_NAME>
+			command$./client -s <FILE_NAME>
