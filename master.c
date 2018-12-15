@@ -34,6 +34,16 @@ void loading(unsigned int millisecond){
 
 int main(int argc,char *argv[]){
 	int tmp;
+	
+	printf("==========================================================================\n");
+	printf("###### # #      ######     ####  #    #  ####   ####  ##### ###### #####  \n");
+	printf("#      # #      #         #      #    # #    # #    #   #   #      #    # \n");
+	printf("#####  # #      #####      ####  ###### #    # #    #   #   #####  #    # \n");
+	printf("#      # #      #              # #    # #    # #    #   #   #      #####  \n");
+	printf("#      # #      #         #    # #    # #    # #    #   #   #      #   #  \n");
+	printf("#      # ###### ######     ####  #    #  ####   ####    #   ###### #    # \n");
+	printf("==========================================================================\n\n");
+	
 	if(argc>1 && argc<4){
 		if(strcmp(argv[1],"-s")==0){
 			
@@ -93,15 +103,14 @@ int main(int argc,char *argv[]){
 			shmdt(file_data);
 			shmdt(file_name_len);
 			shmdt(file_name);
-
 		}
 		else if(strcmp(argv[1],"-r")==0){
 			printf("## Start collecting data.\n");
 			printf("## How many number of user?\n");
 			scanf("%d",&tmp);
 			
-			int user = tmp;
-			int count=0;
+			unsigned int user = tmp;
+			unsigned int count=0;
 
 			if(user < 1){
 				printf("## Error ! ");
@@ -118,34 +127,12 @@ int main(int argc,char *argv[]){
 			char *file_name2;
 			
 			unsigned int working=0;
-			
-			
+					
 			// count
-			shm_id[0] = shmget(SHM_KEY10, sizeof(int), IPC_CREAT|0666);
+			shm_id[0] = shmget(SHM_KEY10, sizeof(unsigned int), IPC_CREAT|0666);
 			shared_mem[0]=shmat(shm_id[0], (void *)0,0);
 			
-			// file_size
-			printf("## work\n");
-			shm_id[1] = shmget(SHM_KEY11, sizeof(file_size), IPC_CREAT|0666);
-			shared_mem[1]=shmat(shm_id[1], (void *)0,0);
-			
-			//file_data
-			printf("2\n");
-			shm_id[2] = shmget(SHM_KEY12, file_size, IPC_CREAT|0666);
-			file_data=shmat(shm_id[2], (void *)0,0);
-			
-			// file_name_len
-			printf("3\n");
-			shm_id[3] = shmget(SHM_KEY13, sizeof(file_name_len), IPC_CREAT|0666);
-			shared_mem[2]=shmat(shm_id[3], (void *)0,0);
-			
-			// file_name
-			printf("4\n");
-			shm_id[4] = shmget(SHM_KEY14, file_name_len, IPC_CREAT|0666);
-			file_name=shmat(shm_id[4], (void *)0,0);
-			
 			// working 0: finished 1: working
-			printf("5\n");
 			shm_id[5] = shmget(SHM_KEY15, sizeof(unsigned int), IPC_CREAT|0666);
 			shared_mem[3]=shmat(shm_id[5], (void *)0,0);
 
@@ -163,18 +150,33 @@ int main(int argc,char *argv[]){
 				count = atoi(shared_mem[0]);
 				working = atoi(shared_mem[3]);
 				loading(100000);
-				printf("working: %d count: %d\n",working,count);
 				if((prev_count+1 == count) && (working ==2)){// upper 1
-					
+					working =3;
 					sprintf((char *)shared_mem[3], "%d",working);
-					
-					printf("\n Connected: %d\n",count);
-					printf("## GET FILE user %d / %d.\n",count,user);
-					
+			
+					// file_size
+					shm_id[1] = shmget(SHM_KEY11, 0, IPC_CREAT|0666);
+					shared_mem[1]=shmat(shm_id[1], (void *)0,0);
 					file_size = atoi(shared_mem[1]);
+
+					//file_data
+					shm_id[2] = shmget(SHM_KEY12, 0, IPC_CREAT|0666);
+					file_data=shmat(shm_id[2], (void *)0,0);
+
+					// file_name_len
+					shm_id[3] = shmget(SHM_KEY13, 0, IPC_CREAT|0666);
+					shared_mem[2]=shmat(shm_id[3], (void *)0,0);
 					file_name_len = atoi(shared_mem[2]);
 					
-					mkdir("output",0776);
+					// file_name
+					shm_id[4] = shmget(SHM_KEY14, 0, IPC_CREAT|0666);
+					file_name=shmat(shm_id[4], (void *)0,0);
+
+					printf("\n## Connected: %d\n",count);
+					printf("## GET FILE user %d / %d.\n",count,user);
+
+					mkdir("output",0755);
+					
 					// pointer to string
 					char path[file_name_len+1];
 					for(int i=0;i<file_name_len+1;i++){
@@ -182,14 +184,12 @@ int main(int argc,char *argv[]){
 					}
 					char path2[]="./output/";
 					strcat(path2,path);
-					printf("%s\n",path2);
+					
 					FILE *fp = fopen(path2,"w+");
-					printf("7\n");
+
 					fwrite((char *)file_data, 1, file_size, fp);
-					printf("8\n");
 					fclose(fp);
-					printf("9\n");
-					printf("## FILE WROTE SUCCESS !\n");
+					printf("## FILE WROTE SUCCESS !\n\n");
 					prev_count = count;
 					working = 0;
 					sprintf((char *)shared_mem[3], "%d",working);
@@ -199,13 +199,19 @@ int main(int argc,char *argv[]){
 				}
 			}
 			printf("## Files collected Success. %d users\n",count);
-			
-			/* clear shared memory
 			for(int i=0;i<6;i++)
 				shmctl(shm_id[i], IPC_RMID, 0);
-			*/
+			shmdt(shared_mem[0]);
+			shmdt(shared_mem[1]);
+			shmdt(shared_mem[2]);
+			shmdt(shared_mem[3]);
+			shmdt(file_data);
+			shmdt(file_name_len);
+			shmdt(file_name);
+			return 0;		
 		}
-		
+		return 0;
 	}
+	printf("## Parameter error, please retry it.\n");
 	return 0;
 }

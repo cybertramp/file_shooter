@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
 	printf("#      # #      #              # #    # #    # #    #   #   #      #####  \n");
 	printf("#      # #      #         #    # #    # #    # #    #   #   #      #   #  \n");
 	printf("#      # ###### ######     ####  #    #  ####   ####    #   ###### #    # \n");
-	printf("==========================================================================\n");
+	printf("==========================================================================\n\n");
 
 	if(argc>1 && argc<4){
 		if(strcmp(argv[1],"-r")==0&& argv[2]){
@@ -69,16 +69,16 @@ int main(int argc, char *argv[]){
 			file_size = atoi(shared_mem[0]);
 			printf("..1");
 			
-			shm_id[1] = shmget(SHM_KEY2, file_size, IPC_CREAT|0666);
+			shm_id[1] = shmget(SHM_KEY2, 0, IPC_CREAT|0666);
 			file_data=shmat(shm_id[1], (void *)0,0);
 			printf("..2");
 			
-			shm_id[2] = shmget(SHM_KEY3, sizeof(unsigned int), IPC_CREAT|0666);
+			shm_id[2] = shmget(SHM_KEY3, 0, IPC_CREAT|0666);
 			shared_mem[1] = shmat(shm_id[2], (void *)0,0);
 			file_name_len = atoi(shared_mem[1]);
 			printf("..3");
 
-			shm_id[3] = shmget(SHM_KEY4, file_name_len, IPC_CREAT|0666);
+			shm_id[3] = shmget(SHM_KEY4, 0,IPC_CREAT|0666);
 			file_name=shmat(shm_id[3], (void *)0,0);
 			printf("..4");
 
@@ -97,18 +97,19 @@ int main(int argc, char *argv[]){
 		}
 		else if(strcmp(argv[1],"-s")==0){
 			
-			int shm_id[6];
-			void *shared_mem[6];
-
-			long filelen;
+			unsigned long filelen;
 			char *buf;
 
 			unsigned int count;
 			unsigned int user;
 			unsigned int working;
+			
+			int shm_id[6];
+			void *shared_mem[6];
 
-			unsigned int file_size;
+			unsigned long file_size;
 			char *file_data;
+			char *file_data2;
 			unsigned int file_name_len;
 			char *file_name;
 
@@ -120,10 +121,15 @@ int main(int argc, char *argv[]){
 			buf = (char *)malloc((filelen+1)*sizeof(char));
 			fread(buf, filelen, 1, fp);
 			fclose(fp);
-			printf("## Loaded file. bytes: %d\n",filelen);
+			printf("## Loaded file. %dbytes.\n");
 			
 			// read working 0:finished 1: working
-			shm_id[0] = shmget(SHM_KEY15, sizeof(unsigned int), IPC_CREAT|0666);
+			shm_id[0] = shmget(SHM_KEY15, 0, IPC_CREAT|0666);
+			// check shared memory
+			if(shm_id[0] == -1){
+				printf("\n## The master process is not running.\n");
+				return -1;
+			}
 			shared_mem[0]=shmat(shm_id[0], (void *)0,0);
 			
 			printf("## waiting for my turn.. -");
@@ -134,39 +140,37 @@ int main(int argc, char *argv[]){
 					// switch work mode
 					working=1;
 					sprintf((char *)shared_mem[0], "%d",working);
-					
-					printf("\n## client: %d start to transfer!\n");
-					
+										
 					// read count and count++
-					shm_id[1] = shmget(SHM_KEY10, sizeof(int), IPC_CREAT|0666);
+					shm_id[1] = shmget(SHM_KEY10, 0, IPC_CREAT|0666);
 					shared_mem[1]=shmat(shm_id[1], (void *)0,0);
 					count = atoi(shared_mem[1]);
 					count++;
 					sprintf((char *)shared_mem[1], "%d",count);
 					
+					printf("\n## Connected. \n",count);
+
 					// file_size
-					printf("## work\n");
 					shm_id[2] = shmget(SHM_KEY11, sizeof(file_size), IPC_CREAT|0666);
 					shared_mem[2]=shmat(shm_id[2], (void *)0,0);
 					file_size = filelen;
 					sprintf((char *)shared_mem[2], "%ld",file_size);
+					printf("%d %d %s\n",file_size,filelen,shared_mem[2]);
 
-					// send data
-					printf("## Client %d send to master..\n",count);
-					printf("## work\n");
-					shm_id[3] = shmget(SHM_KEY12, sizeof(file_size), IPC_CREAT|0666);
+					// file_data
+					shm_id[3] = shmget(SHM_KEY12, filelen, IPC_CREAT|0666);
 					file_data=shmat(shm_id[3], (void *)0,0);
 					strcpy(file_data,buf);
+					//file_data = buf;
+					free(buf);
 
 					// file_name_len
-					printf("3\n");
 					shm_id[4] = shmget(SHM_KEY13, sizeof(file_name_len), IPC_CREAT|0666);
 					shared_mem[3]=shmat(shm_id[4], (void *)0,0);
 					file_name_len = strlen(argv[2]);
 					sprintf((char *)shared_mem[3], "%d",file_name_len);
 
 					// file_name
-					printf("4\n");
 					shm_id[5] = shmget(SHM_KEY14, file_name_len, IPC_CREAT|0666);
 					file_name=shmat(shm_id[5], (void *)0,0);
 					strcpy(file_name,argv[2]);
@@ -174,13 +178,21 @@ int main(int argc, char *argv[]){
 					// switch work mode
 					working=2;
 					sprintf((char *)shared_mem[0], "%d",working);
-					printf("%d %d\n",working,count);
-					printf("## work finished!\n");
+					printf("## Transfer success!\n");
 					break;
 				}
 			}
+			shmdt(shared_mem[0]);
+			shmdt(shared_mem[1]);
+			shmdt(shared_mem[2]);
+			shmdt(shared_mem[3]);
+			shmdt(file_data);
+			shmdt(file_name_len);
+			shmdt(file_name);
+			return 0;
 		}
+		return 0;
 	}
-	
+	printf("## Parameter error, please retry it.\n");
 	return 0;
 }
