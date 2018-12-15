@@ -4,18 +4,18 @@
 #include<sys/shm.h>
 
 // for receiving
-#define SHM_KEY1 70
-#define SHM_KEY2 71
-#define	SHM_KEY3 72
-#define SHM_KEY4 73
+#define SHM_KEY1 800
+#define SHM_KEY2 801
+#define	SHM_KEY3 802
+#define SHM_KEY4 803
 
 // for sending
-#define SHM_KEY10 80
-#define SHM_KEY11 81
-#define SHM_KEY12 82
-#define SHM_KEY13 83
-#define SHM_KEY14 84
-#define SHM_KEY15 85
+#define SHM_KEY10 804
+#define SHM_KEY11 805
+#define SHM_KEY12 806
+#define SHM_KEY13 807
+#define SHM_KEY14 808
+#define SHM_KEY15 809
 
 void loading(unsigned int millisecond){
 	for(int i=0;i<4;i++){
@@ -36,8 +36,18 @@ void loading(unsigned int millisecond){
 
 int main(int argc, char *argv[]){
 	
+	printf("==========================================================================\n");
+	printf("###### # #      ######     ####  #    #  ####   ####  ##### ###### #####  \n");
+	printf("#      # #      #         #      #    # #    # #    #   #   #      #    # \n");
+	printf("#####  # #      #####      ####  ###### #    # #    #   #   #####  #    # \n");
+	printf("#      # #      #              # #    # #    # #    #   #   #      #####  \n");
+	printf("#      # #      #         #    # #    # #    # #    #   #   #      #   #  \n");
+	printf("#      # ###### ######     ####  #    #  ####   ####    #   ###### #    # \n");
+	printf("==========================================================================\n");
+
 	if(argc>1 && argc<4){
 		if(strcmp(argv[1],"-r")==0&& argv[2]){
+			
 			int shm_id[4];
 			void *shared_mem[4];
 			
@@ -45,43 +55,45 @@ int main(int argc, char *argv[]){
 			char *file_data;
 			unsigned int file_name_len;
 			char *file_name;
-
-			shm_id[0] = shmget(SHM_KEY1, sizeof(file_size), IPC_CREAT|0666);
+			
+			printf("## Start receive data.\n");
+			printf("## Get shared memory to save");
+			
+			shm_id[0] = shmget(SHM_KEY1, 0, IPC_CREAT|0666);
+			// check shared memory
+			if(shm_id[0] == -1){
+				printf("\n## The master process is not running.\n");
+				return -1;
+			}
 			shared_mem[0]=shmat(shm_id[0], (void *)0,0);
 			file_size = atoi(shared_mem[0]);
-			printf("1\n");
+			printf("..1");
 			
 			shm_id[1] = shmget(SHM_KEY2, file_size, IPC_CREAT|0666);
 			file_data=shmat(shm_id[1], (void *)0,0);
-			printf("2\n");
+			printf("..2");
 			
-			shm_id[2] = shmget(SHM_KEY3, sizeof(file_name_len), IPC_CREAT|0666);
+			shm_id[2] = shmget(SHM_KEY3, sizeof(unsigned int), IPC_CREAT|0666);
 			shared_mem[1] = shmat(shm_id[2], (void *)0,0);
 			file_name_len = atoi(shared_mem[1]);
-			printf("%d\n",file_name_len);
-			printf("3\n");
+			printf("..3");
 
 			shm_id[3] = shmget(SHM_KEY4, file_name_len, IPC_CREAT|0666);
 			file_name=shmat(shm_id[3], (void *)0,0);
-			
-			FILE *fp;
-			printf("4\n");
+			printf("..4");
+
 			// pointer to string
-			fp = fopen(argv[2],"w");
+			FILE *fp = fopen(argv[2],"w");
 			fwrite((char *)file_data, 1, file_size, fp);
 			fclose(fp);
+			printf("..5\n");
+			
+			printf("## Received success!\n");
+			shmdt(shared_mem[0]);
+			shmdt(file_data);
+			shmdt(shared_mem[1]);
+			shmdt(file_name);
 
-			printf("shm_id: %d %d %d %d\n",shm_id[0],shm_id[1],shm_id[2],shm_id[3]);
-			printf("%d\n",file_size);
-			printf("%s\n",(char *)file_data);
-			printf("%d\n",file_name_len);
-			printf("%s\n",file_name);
-			sleep(1);
-
-			/* clear shared_memory
-			for(int i=0;i<4;i++)
-				shmctl(shm_id[i], IPC_RMID, 0);
-			 */
 		}
 		else if(strcmp(argv[1],"-s")==0){
 			

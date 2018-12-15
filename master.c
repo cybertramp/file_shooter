@@ -3,17 +3,17 @@
 #include<sys/ipc.h>
 #include<sys/shm.h>
 
-#define SHM_KEY1 70
-#define SHM_KEY2 71
-#define SHM_KEY3 72
-#define SHM_KEY4 73
+#define SHM_KEY1 800
+#define SHM_KEY2 801
+#define SHM_KEY3 802
+#define SHM_KEY4 803
 
-#define SHM_KEY10 80
-#define SHM_KEY11 81
-#define SHM_KEY12 82
-#define SHM_KEY13 83
-#define SHM_KEY14 84
-#define SHM_KEY15 85
+#define SHM_KEY10 804
+#define SHM_KEY11 805
+#define SHM_KEY12 806
+#define SHM_KEY13 807
+#define SHM_KEY14 808
+#define SHM_KEY15 809
 
 void loading(unsigned int millisecond){
 	for(int i=0;i<4;i++){
@@ -50,43 +50,50 @@ int main(int argc,char *argv[]){
 			buf = (char *)malloc((filelen+1)*sizeof(char));
 			fread(buf, filelen, 1, fp);
 			fclose(fp);
-			printf("## Loaded file. bytes: %d\n",filelen);
+			printf("## Loaded file. %dbytes.\n",filelen);
 			
 			unsigned long file_size;
 			char (*file_data)[filelen];
 			unsigned int file_name_len;
 			char (*file_name);
 
-			printf("## work\n");
+			printf("## Set up shared memory.");
 			shm_id[0] = shmget(SHM_KEY1, sizeof(file_size), IPC_CREAT|0666);
 			shared_mem[0]=shmat(shm_id[0], (void *)0,0);
 			file_size = filelen;
 			sprintf((char *)shared_mem[0], "%ld",file_size);
+			printf("..1");
 			
-			printf("2\n");
 			shm_id[1] = shmget(SHM_KEY2, filelen, IPC_CREAT|0666);
 			file_data=shmat(shm_id[1], (void *)0,0);
 			strcpy(file_data,buf);
+			printf("..2");
 			
-			printf("3\n");
 			shm_id[2] = shmget(SHM_KEY3, sizeof(file_name_len), IPC_CREAT|0666);
 			shared_mem[1]=shmat(shm_id[2], (void *)0,0);
 			file_name_len = strlen(argv[2]);
 			sprintf((char *)shared_mem[1], "%d",file_name_len);
+			printf("..3");
 			
-			printf("4\n");
 			shm_id[3] = shmget(SHM_KEY4, file_name_len, IPC_CREAT|0666);
 			file_name=shmat(shm_id[3], (void *)0,0);
 			strcpy(file_name,argv[2]);
-			printf("5\n");
-			while(1){
-				printf("shm_id: %d %d %d %d\n", shm_id[0],shm_id[1],shm_id[2],shm_id[3]);
-				printf("%d\n",file_size);
-				printf("%s\n",file_data);
-				printf("%d\n",file_name_len);
-				printf("%s\n",file_name);
-				sleep(1);
+			printf("..4\n");
+
+			printf("## Transfer success!\n");
+			char c=NULL;
+			while(c!='q'){
+				printf("## If you finished transmission, please input 'q' with ENTER.\n");
+				scanf("%c",&c);
 			}
+			printf("## Shared memory clear success!\n");
+			for(int i=0;i<4;i++)
+				shmctl(shm_id[i], IPC_RMID, 0);
+			shmdt(shared_mem[0]);
+			shmdt(file_data);
+			shmdt(file_name_len);
+			shmdt(file_name);
+
 		}
 		else if(strcmp(argv[1],"-r")==0){
 			printf("## Start collecting data.\n");
