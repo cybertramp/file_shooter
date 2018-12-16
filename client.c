@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
 	printf("==========================================================================\n\n");
 
 	if(argc>1 && argc<4){
-		if(strcmp(argv[1],"-r")==0&& argv[2]){
+		if(strcmp(argv[1],"-r")==0 && argv[2]){
 			
 			int shm_id[4];
 			void *shared_mem[4];
@@ -90,12 +90,12 @@ int main(int argc, char *argv[]){
 			
 			printf("## Received success!\n");
 			shmdt(shared_mem[0]);
-			shmdt(file_data);
 			shmdt(shared_mem[1]);
+			shmdt(file_data);
 			shmdt(file_name);
 
 		}
-		else if(strcmp(argv[1],"-s")==0){
+		else if(strcmp(argv[1],"-s")==0 && argv[2]){
 			
 			unsigned long filelen;
 			char *buf;
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]){
 			unsigned int file_name_len;
 			char *file_name;
 
-			printf("## Start sending data.\n");
+			printf("## Start transfer data.\n");
 			FILE *fp = fopen(argv[2],"r");
 			fseek(fp,0,SEEK_END);
 			filelen = ftell(fp);
@@ -121,7 +121,7 @@ int main(int argc, char *argv[]){
 			buf = (char *)malloc((filelen+1)*sizeof(char));
 			fread(buf, filelen, 1, fp);
 			fclose(fp);
-			printf("## Loaded file. %dbytes.\n");
+			printf("## Loaded file. %dbytes.\n",filelen);
 			
 			// read working 0:finished 1: working
 			shm_id[0] = shmget(SHM_KEY15, 0, IPC_CREAT|0666);
@@ -155,7 +155,6 @@ int main(int argc, char *argv[]){
 					shared_mem[2]=shmat(shm_id[2], (void *)0,0);
 					file_size = filelen;
 					sprintf((char *)shared_mem[2], "%ld",file_size);
-					printf("%d %d %s\n",file_size,filelen,shared_mem[2]);
 
 					// file_data
 					shm_id[3] = shmget(SHM_KEY12, filelen, IPC_CREAT|0666);
@@ -187,7 +186,6 @@ int main(int argc, char *argv[]){
 			shmdt(shared_mem[2]);
 			shmdt(shared_mem[3]);
 			shmdt(file_data);
-			shmdt(file_name_len);
 			shmdt(file_name);
 			return 0;
 		}

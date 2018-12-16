@@ -45,7 +45,7 @@ int main(int argc,char *argv[]){
 	printf("==========================================================================\n\n");
 	
 	if(argc>1 && argc<4){
-		if(strcmp(argv[1],"-s")==0){
+		if(strcmp(argv[1],"-s")==0&& argv[2]){
 			
 			int shm_id[4];
 			void *shared_mem[4];
@@ -100,8 +100,8 @@ int main(int argc,char *argv[]){
 			for(int i=0;i<4;i++)
 				shmctl(shm_id[i], IPC_RMID, 0);
 			shmdt(shared_mem[0]);
+			shmdt(shared_mem[1]);
 			shmdt(file_data);
-			shmdt(file_name_len);
 			shmdt(file_name);
 		}
 		else if(strcmp(argv[1],"-r")==0){
@@ -118,7 +118,7 @@ int main(int argc,char *argv[]){
 			}
 			
 			int shm_id[6];
-			void *shared_mem[6];
+			void *shared_mem[4];
 			
 			unsigned long file_size;
 			char *file_data;
@@ -206,7 +206,6 @@ int main(int argc,char *argv[]){
 			shmdt(shared_mem[2]);
 			shmdt(shared_mem[3]);
 			shmdt(file_data);
-			shmdt(file_name_len);
 			shmdt(file_name);
 			return 0;		
 		}
